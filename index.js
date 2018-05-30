@@ -1,25 +1,45 @@
 const io = require('socket.io')();
 const fs = require('fs');
-const port = 8000;
+const port = process.env.PORT || 8000;
+const foldername = process.env.FOLDER || './ex_watch_folder';
 
-const filename = 'beingwatched.txt';
+const { promisify } = require('util');
+const readdirAsync = promisify(fs.readdir);
+
 
 io.on('connection', (client) => {
-    // Emit events to client.
-    io.on('connection', (client) => {
-        client.on('subscribeToFileChanges', () => {
-          console.log('client is subscribing to file changes. ');
-          fs.watch(filename, () => {
-            console.log("Detected change");
-            fs.readFile(filename, (err,data) =>{
-              if (err) console.log(err);
-              console.log('Transmitting: ', data.toString())
-              client.emit('filecontent',data.toString())
-            })
-          })
-        });
+  client.on('ls', async () => {
+    console.log('Client is requesting list of files.');
+    const files = await ls();
 
-      })});
+    console.log(files)
+
+
+    // fs.watch(foldername, (eventType, filename) => {
+    //   console.log("Detected change");
+    //   fs.readFile(filename, (err, data) => {
+    //     if (err) {
+    //       console.log(err);
+    //       client.emit('error', err);
+    //       return
+    //     }
+    //     // console.log('Transmitting: ', data.toString())
+    //     client.emit('filecontent', { foo: 'bar' })
+    //   })
+    // })
+  });
+
+});
+
 io.listen(port);
 console.log(`Listening on port: ${port}`);
+
+
+const ls = async () => {
+  try {
+    return  readdirAsync(foldername);
+  }
+  catch(err) { console.log(err) };
+  }
+  
 
